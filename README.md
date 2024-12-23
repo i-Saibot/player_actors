@@ -5,7 +5,7 @@ This library helps you create actors that will be visible only to a specific pla
 
 **Callback: Triggered when a player deals damage to player actors.**
 ```pawn
-forward OnPlayerGiveDamagePlayerActor(playerid, actorid, Float:amount, WEAPON:weaponid, bodypart);
+forward OnPlayerGiveDamagePlayerActor(playerid, actorid, Float:amount, weaponid, bodypart);
 ```
 
 **Functions: I think the names are self-explanatory.**
