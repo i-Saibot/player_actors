@@ -27,7 +27,7 @@ static
 	IteratorArray:PlayerActorsId[MAX_PLAYERS]<MAX_ACTORS>;
 
 
-forward OnPlayerGiveDamagePlayerActor(playerid, actorid, Float:amount, WEAPON:weaponid, bodypart);
+forward OnPlayerGiveDamagePlayerActor(playerid, actorid, Float:amount, weaponid, bodypart);
 
 public OnGameModeInit()
 {
