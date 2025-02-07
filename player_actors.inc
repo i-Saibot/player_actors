@@ -20,61 +20,18 @@
 	#error "Please include foreach before player_actors"
 #endif
 
-static const ORPC_CREATE_PLAYER_ACTOR = 171;
 
 static
-	bool:gPlayerActorsIsStreamActor[MAX_ACTORS],
-	IteratorArray:PlayerActorsId[MAX_PLAYERS]<MAX_ACTORS>;
+	CUSTOM_PLAYER_ACTORS 				= 0xFF999;
+	const ORPC_CREATE_PLAYER_ACTOR		= 171;
 
 
 forward OnPlayerGiveDamagePlayerActor(playerid, actorid, Float:amount, weaponid, bodypart);
 
-public OnGameModeInit()
-{
-	Iter_Init(PlayerActorsId);
-#if defined spact_OnGameModeInit
-	return spact_OnGameModeInit();
-#else
-	return 1;
-#endif
-}
-#if defined _ALS_OnGameModeInit
-	#undef OnGameModeInit
-#else
-	#define _ALS_OnGameModeInit
-#endif
-#define OnGameModeInit spact_OnGameModeInit
-#if defined    spact_OnGameModeInit
-	forward spact_OnGameModeInit();
-#endif
-
-public OnPlayerDisconnect(playerid, reason)
-{
-	foreach (PlayerActorsId[playerid], actorid)
-	{
-		gPlayerActorsIsStreamActor[actorid] = false;
-		DestroyDynamicActor(actorid);
-	}
-	Iter_Clear(PlayerActorsId[playerid]);
-#if defined spact_OnPlayerDisconnect
-	return spact_OnPlayerDisconnect(playerid, reason);
-#else
-	return 1;
-#endif
-}
-#if defined _ALS_OnPlayerDisconnect
-	#undef OnPlayerDisconnect
-#else
-	#define _ALS_OnPlayerDisconnect
-#endif
-#define OnPlayerDisconnect spact_OnPlayerDisconnect
-#if defined    spact_OnPlayerDisconnect
-	forward spact_OnPlayerDisconnect(playerid, reason);
-#endif
 
 public OnPlayerGiveDamageDynamicActor(playerid, STREAMER_TAG_ACTOR:actorid, Float:amount, weaponid, bodypart)
 {
-	if (gPlayerActorsIsStreamActor[actorid])
+	if (IsPlayerActor(actorid))
 	{
 		if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) == playerid)
 		{
@@ -114,7 +71,7 @@ ORPC:ORPC_CREATE_PLAYER_ACTOR(playerid, BitStream:bs)
 
 	new streamer_actorid = Streamer_GetItemStreamerID(playerid, STREAMER_TYPE_ACTOR, wActorID);
 
-	if (gPlayerActorsIsStreamActor[streamer_actorid])
+	if (IsPlayerActor(streamer_actorid))
 	{
 		new targetid = Streamer_GetIntData(STREAMER_TYPE_ACTOR, streamer_actorid, E_STREAMER_PLAYER_ID);
 
@@ -125,6 +82,7 @@ ORPC:ORPC_CREATE_PLAYER_ACTOR(playerid, BitStream:bs)
 	}
 	return 1;
 }
+
 
 /*
 
@@ -145,29 +103,27 @@ stock CreatePlayerActor(playerid, modelid, Float:x, Float:y, Float:z, Float:rota
 		.worldid = worldid,
 		.playerid = playerid
 	);
-	if (actorid == INVALID_ACTOR_ID)
+	if (actorid == INVALID_STREAMER_ID)
 	{
 		return INVALID_ACTOR_ID;
 	}
-	Iter_Add(PlayerActorsId[playerid], actorid);
-	gPlayerActorsIsStreamActor[actorid] = true;
+	SetPlayerActorValue(actorid, true);
 	return actorid;
 }
 
 stock DestroyPlayerActor(playerid, actorid)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
-	Iter_Remove(PlayerActorsId[playerid], actorid);
-	gPlayerActorsIsStreamActor[actorid] = false;
+	SetPlayerActorValue(actorid, false);
 	return DestroyDynamicActor(actorid);
 }
 
 stock ApplyPlayerActorAnimation(playerid, actorid, const animlib[], const animname[], Float:fdelta, loop, lockx, locky, freeze, time)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -187,7 +143,7 @@ stock ApplyPlayerActorAnimation(playerid, actorid, const animlib[], const animna
 
 stock ClearPlayerActorAnimations(playerid, actorid)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -197,7 +153,7 @@ stock ClearPlayerActorAnimations(playerid, actorid)
 
 stock IsValidPlayerActor(playerid, actorid)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -206,7 +162,7 @@ stock IsValidPlayerActor(playerid, actorid)
 
 stock IsPlayerActorInvulnerable(playerid, actorid)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -215,7 +171,7 @@ stock IsPlayerActorInvulnerable(playerid, actorid)
 
 stock IsPlayerActorStreamedIn(playerid, actorid)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -224,7 +180,7 @@ stock IsPlayerActorStreamedIn(playerid, actorid)
 
 stock SetPlayerActorVirtualWorld(playerid, actorid, worldid)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -233,7 +189,7 @@ stock SetPlayerActorVirtualWorld(playerid, actorid, worldid)
 
 stock SetPlayerActorFacingAngle(playerid, actorid, Float:rotation)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -242,7 +198,7 @@ stock SetPlayerActorFacingAngle(playerid, actorid, Float:rotation)
 
 stock SetPlayerActorPos(playerid, actorid, Float:x, Float:y, Float:z)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -251,7 +207,7 @@ stock SetPlayerActorPos(playerid, actorid, Float:x, Float:y, Float:z)
 
 stock SetPlayerActorHealth(playerid, actorid, Float:health)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -260,7 +216,7 @@ stock SetPlayerActorHealth(playerid, actorid, Float:health)
 
 stock SetPlayerActorInvulnerable(playerid, actorid, invulnerable = true)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -269,7 +225,7 @@ stock SetPlayerActorInvulnerable(playerid, actorid, invulnerable = true)
 
 stock GetPlayerActorVirtualWorld(playerid, actorid)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -278,7 +234,7 @@ stock GetPlayerActorVirtualWorld(playerid, actorid)
 
 stock GetPlayerActorFacingAngle(playerid, actorid, &Float:rotation)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -287,7 +243,7 @@ stock GetPlayerActorFacingAngle(playerid, actorid, &Float:rotation)
 
 stock GetPlayerActorPos(playerid, actorid, &Float:x, &Float:y, &Float:z)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -296,7 +252,7 @@ stock GetPlayerActorPos(playerid, actorid, &Float:x, &Float:y, &Float:z)
 
 stock GetPlayerActorHealth(playerid, actorid, &Float:health)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
@@ -305,9 +261,42 @@ stock GetPlayerActorHealth(playerid, actorid, &Float:health)
 
 stock GetPlayerActorAnimation(playerid, actorid, animlib[], animname[], &Float:fdelta, &loop, &lockx, &locky, &freeze, &time, maxanimlib = sizeof animlib, maxanimname = sizeof animname)
 {
-	if (Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) != playerid)
+	if (!IsPlayerActorForPlayer(playerid, actorid))
 	{
 		return 0;
 	}
 	return GetDynamicActorAnimation(actorid, animlib, animname, fdelta, loop, lockx, locky, freeze, time, maxanimlib = sizeof animlib, maxanimname = sizeof animname);
+}
+
+
+/*
+
+	static functions
+
+*/
+
+static stock SetPlayerActorValue(actorid, bool:value)
+{
+	Streamer_SetIntData(
+		STREAMER_TYPE_ACTOR,
+		actorid,
+		E_STREAMER_CUSTOM(CUSTOM_PLAYER_ACTORS),
+		value
+	);
+	return 1;
+}
+
+static stock GetPlayerActorValue(actorid)
+{
+	return Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_CUSTOM(CUSTOM_PLAYER_ACTORS));
+}
+
+static stock IsPlayerActorForPlayer(playerid, actorid)
+{
+	return Streamer_GetIntData(STREAMER_TYPE_ACTOR, actorid, E_STREAMER_PLAYER_ID) == playerid);
+}
+
+static stock IsPlayerActor(actorid)
+{
+	return GetPlayerActorValue(actorid) != 0;
 }
