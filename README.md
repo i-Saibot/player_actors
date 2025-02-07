@@ -33,4 +33,4 @@ GetPlayerActorHealth(playerid, actorid, &Float:health);
 GetPlayerActorAnimation(playerid, actorid, animlib[], animname[], &Float:fdelta, &loop, &lockx, &locky, &freeze, &time, maxanimlib = sizeof animlib, maxanimname = sizeof animname);
 ```
 
->The actorss are automatically removed after the player exits.
+>The actors are automatically NOT removed after the player exits.
